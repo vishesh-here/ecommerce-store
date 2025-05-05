@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Container,
   Typography,
@@ -212,6 +213,7 @@ const OrderDetailsDialog = ({ open, onClose, order }) => {
 
 const OrdersPage = () => {
   const theme = useTheme();
+  const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const dispatch = useDispatch();
   const { items: orders, status, error } = useSelector((state) => state.orders);

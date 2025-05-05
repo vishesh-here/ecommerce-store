@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Container, Typography, Box } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import { Container, Typography, Box, CircularProgress, Alert } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useDispatch, useSelector } from 'react-redux';
 import BannerCarousel from '../../components/BannerCarousel/BannerCarousel';
@@ -30,81 +30,116 @@ const Section = styled(Box)(({ theme }) => ({
 
 const HomePage = () => {
   const dispatch = useDispatch();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const banners = useSelector((state) => state.banners.items);
   const categories = useSelector((state) => state.categories.items);
-  const hotAndNewProducts = useSelector((state) => 
-    state.products.items.filter(p => p.category === 'hot-and-new')
-  );
-  const evergreenProducts = useSelector((state) => 
-    state.products.items.filter(p => p.category === 'evergreen')
-  );
+  const products = useSelector((state) => state.products.items);
   const wishlistedProducts = useSelector((state) => state.wishlist.items);
   const pastOrders = useSelector((state) => state.orders.pastOrders);
 
+  // Memoize filtered products
+  const hotAndNewProducts = React.useMemo(() => 
+    products.filter(p => p.category === 'hot-and-new'),
+    [products]
+  );
+
+  const evergreenProducts = React.useMemo(() => 
+    products.filter(p => p.category === 'evergreen'),
+    [products]
+  );
+
   useEffect(() => {
-    dispatch(fetchBanners());
-    dispatch(fetchCategories());
-    dispatch(fetchProducts());
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        await Promise.all([
+          dispatch(fetchBanners()),
+          dispatch(fetchCategories()),
+          dispatch(fetchProducts())
+        ]);
+      } catch (err) {
+        setError('Failed to load content. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, [dispatch]);
 
   return (
     <Box>
-      <BannerCarousel banners={banners} />
-      
-      <Container maxWidth="xl">
-        <Section>
-          <SectionTitle variant="h4" gutterBottom>
-            Shop by Category
-          </SectionTitle>
-          <CategoryFilter categories={categories} />
-        </Section>
+      {loading ? (
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+          <CircularProgress />
+        </Box>
+      ) : error ? (
+        <Container maxWidth="xl">
+          <Alert severity="error" sx={{ mt: 4 }}>{error}</Alert>
+        </Container>
+      ) : (
+        <>
+          <BannerCarousel banners={banners} />
+          
+          <Container maxWidth="xl">
+            <Section>
+              <SectionTitle variant="h4" gutterBottom>
+                Shop by Category
+              </SectionTitle>
+              <CategoryFilter categories={categories} />
+            </Section>
 
-        <Section>
-          <SectionTitle variant="h4" gutterBottom>
-            What's Hot and New!
-          </SectionTitle>
-          <ProductGrid 
-            products={hotAndNewProducts}
-            category="hot-and-new"
-          />
-        </Section>
+            <Section>
+              <SectionTitle variant="h4" gutterBottom>
+                What's Hot and New!
+              </SectionTitle>
+              <ProductGrid 
+                products={hotAndNewProducts}
+                category="hot-and-new"
+              />
+            </Section>
 
-        <Section>
-          <SectionTitle variant="h4" gutterBottom>
-            What's Evergreen
-          </SectionTitle>
-          <ProductGrid 
-            products={evergreenProducts}
-            category="evergreen"
-          />
-        </Section>
+            <Section>
+              <SectionTitle variant="h4" gutterBottom>
+                What's Evergreen
+              </SectionTitle>
+              <ProductGrid 
+                products={evergreenProducts}
+                category="evergreen"
+              />
+            </Section>
 
-        {wishlistedProducts.length > 0 && (
-          <Section>
-            <SectionTitle variant="h4" gutterBottom>
-              Your Wall of Loved Products
-            </SectionTitle>
-            <ProductGrid 
-              products={wishlistedProducts}
-              category="wishlist"
-              showMore={false}
-            />
-          </Section>
-        )}
+            {wishlistedProducts.length > 0 && (
+              <Section>
+                <SectionTitle variant="h4" gutterBottom>
+                  Your Wall of Loved Products
+                </SectionTitle>
+                <ProductGrid 
+                  products={wishlistedProducts}
+                  category="wishlist"
+                  showMore={false}
+                />
+              </Section>
+            )}
 
-        {pastOrders.length > 0 && (
-          <Section>
-            <SectionTitle variant="h4" gutterBottom>
-              Your Wall of Owned Products
-            </SectionTitle>
-            <ProductGrid 
-              products={pastOrders}
-              category="past-orders"
-              showMore={false}
-            />
-          </Section>
-        )}
-      </Container>
+            {pastOrders.length > 0 && (
+              <Section>
+                <SectionTitle variant="h4" gutterBottom>
+                  Your Wall of Owned Products
+                </SectionTitle>
+                <ProductGrid 
+                  products={pastOrders}
+                  category="past-orders"
+                  showMore={false}
+                />
+              </Section>
+            )}
+          </Container>
+        </>
+      )}
     </Box>
   );
 };

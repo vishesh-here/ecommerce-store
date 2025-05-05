@@ -25,7 +25,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { toggleWishlist } from '../../store/slices/wishlistSlice';
-import { addToCart } from '../../store/slices/cartSlice';
+import { addItemToCart } from '../../store/slices/cartSlice';
 
 const WishlistItem = ({ item, onShare, onMoveToCart, onRemove }) => {
   const theme = useTheme();
@@ -159,7 +159,7 @@ const WishlistPage = () => {
   };
 
   const handleMoveToCart = (item) => {
-    dispatch(addToCart({ ...item, quantity: 1 }));
+    dispatch(addItemToCart({ ...item, quantity: 1 }));
     dispatch(toggleWishlist(item));
     setSnackbar({
       open: true,

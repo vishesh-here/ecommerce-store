@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { addItemToCart } from '../store/slices/cartSlice';
+import { toggleWishlist } from '../store/slices/wishlistSlice';
 import {
   Container,
   Grid,
@@ -65,24 +68,30 @@ const ProductList = () => {
     // Fetch products based on filters
     const fetchProducts = async () => {
       setLoading(true);
-      // Implement API call here
-      // For now, using setTimeout to simulate API call
-      setTimeout(() => {
-        setProducts([
-          {
-            id: 1,
-            name: 'Premium Leather Watch',
-            price: 299.99,
-            imageUrl: '/images/products/watch.jpg',
-            rating: 4.5,
-          },
-          // Add more products...
-        ]);
+      try {
+        // Implement API call here
+        // For now, using setTimeout to simulate API call
+        setTimeout(() => {
+          setProducts([
+            {
+              id: 1,
+              name: 'Premium Leather Watch',
+              price: 299.99,
+              imageUrl: '/images/products/watch.jpg',
+              rating: 4.5,
+            },
+            // Add more products...
+          ]);
+          setLoading(false);
+        }, 1000);
+      } catch (error) {
         setLoading(false);
-      }, 1000);
+        // Handle error
+      }
     };
 
     fetchProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, page, searchQuery]);
 
   const handleFilterChange = (type, value) => {
@@ -103,14 +112,14 @@ const ProductList = () => {
     }));
   };
 
+  const dispatch = useDispatch();
+
   const handleAddToCart = (productId) => {
-    // Implement add to cart functionality
-    console.log('Adding to cart:', productId);
+    dispatch(addItemToCart({ productId, quantity: 1 }));
   };
 
   const handleToggleWishlist = (productId) => {
-    // Implement wishlist toggle functionality
-    console.log('Toggling wishlist:', productId);
+    dispatch(toggleWishlist(productId));
   };
 
   const FilterDrawer = (

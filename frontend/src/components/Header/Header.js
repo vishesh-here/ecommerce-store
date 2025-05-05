@@ -97,8 +97,8 @@ const Header = () => {
   };
 
   const handleSearch = (e) => {
-    if (e.key === 'Enter') {
-      navigate(`/products?search=${searchQuery}`);
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
@@ -163,6 +163,7 @@ const Header = () => {
             color="inherit"
             onClick={() => navigate('/wishlist')}
             sx={{ mr: 1 }}
+            aria-label={`Wishlist (${wishlistItems.length} items)`}
           >
             <Badge badgeContent={wishlistItems.length} color="error">
               <FavoriteIcon />
@@ -173,6 +174,7 @@ const Header = () => {
             color="inherit"
             onClick={() => navigate('/cart')}
             sx={{ mr: 2 }}
+            aria-label={`Shopping cart (${cartItemCount} items)`}
           >
             <Badge badgeContent={cartItemCount} color="error">
               <CartIcon />

@@ -23,7 +23,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { updateProfile, updatePassword } from '../../store/slices/authSlice';
+import { updateProfile, updatePassword } from '../../store/slices/userSlice';
 
 const profileValidationSchema = Yup.object({
   name: Yup.string()

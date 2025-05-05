@@ -1,5 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { 
+  updateCartItemQuantity, 
+  removeCartItem,
+  fetchCart,
+  selectCartItems,
+  selectCartTotal,
+  selectCartStatus
+} from '../store/slices/cartSlice';
 import {
   Container,
   Typography,
@@ -30,17 +39,15 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 
 const Cart = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [cartItems, setCartItems] = useState([
-    {
-      id: 1,
-      name: 'Premium Leather Watch',
-      price: 299.99,
-      quantity: 1,
-      image: '/images/products/watch.jpg',
-    },
-    // Add more items...
-  ]);
+  const dispatch = useDispatch();
+  const cartItems = useSelector(selectCartItems);
+  const cartTotal = useSelector(selectCartTotal);
+  const cartStatus = useSelector(selectCartStatus);
+  
+  useEffect(() => {
+    dispatch(fetchCart());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [addressDialogOpen, setAddressDialogOpen] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState('');
   const [addresses, setAddresses] = useState([
@@ -56,18 +63,16 @@ const Cart = () => {
     },
   ]);
 
-  const handleQuantityChange = (itemId, delta) => {
-    setCartItems(
-      cartItems.map((item) =>
-        item.id === itemId
-          ? { ...item, quantity: Math.max(1, item.quantity + delta) }
-          : item
-      )
-    );
+  const handleQuantityChange = (productId, delta) => {
+    const item = cartItems.find(item => item.productId === productId);
+    if (item) {
+      const newQuantity = Math.max(1, item.quantity + delta);
+      dispatch(updateCartItemQuantity({ productId, quantity: newQuantity }));
+    }
   };
 
-  const handleRemoveItem = (itemId) => {
-    setCartItems(cartItems.filter((item) => item.id !== itemId));
+  const handleRemoveItem = (productId) => {
+    dispatch(removeCartItem(productId));
   };
 
   const calculateSubtotal = () => {
@@ -102,7 +107,7 @@ const Cart = () => {
     }
   };
 
-  if (loading) {
+  if (cartStatus === 'loading') {
     return <LoadingSpinner />;
   }
 

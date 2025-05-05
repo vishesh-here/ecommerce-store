@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_URL = `${process.env.REACT_APP_API_URL}/api`;
 
 const api = axios.create({
   baseURL: API_URL,
@@ -29,6 +29,9 @@ export const getProductById = (id) => api.get(`/products/${id}`);
 
 // Categories
 export const getCategories = () => api.get('/categories');
+
+// Banners
+export const getBanners = () => api.get('/banners');
 
 // Cart
 export const getCart = () => api.get('/cart');

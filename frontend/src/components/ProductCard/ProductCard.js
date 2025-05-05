@@ -1,10 +1,9 @@
-import React from 'react';
-import { Card, CardMedia, CardContent, Typography, Button, IconButton } from '@mui/material';
+import React from 'react';import PropTypes from 'prop-types';import { Card, CardMedia, CardContent, Typography, Button, IconButton } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import { useDispatch, useSelector } from 'react-redux';
-import { addToCart } from '../../store/slices/cartSlice';
+import { addItemToCart } from '../../store/slices/cartSlice';
 import { toggleWishlist } from '../../store/slices/wishlistSlice';
 
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -35,17 +34,29 @@ const WishlistButton = styled(IconButton)(({ theme }) => ({
   },
 }));
 
+const formatPrice = (price) => {
+  if (typeof price !== 'number' || isNaN(price)) {
+    return 'Price not available';
+  }
+  return `${price.toFixed(2)}`;
+};
+
 const ProductCard = ({ product }) => {
   const dispatch = useDispatch();
   const wishlist = useSelector((state) => state.wishlist.items);
   const isWishlisted = wishlist.some((item) => item.id === product.id);
 
   const handleAddToCart = () => {
-    dispatch(addToCart({ ...product, quantity: 1 }));
+    dispatch(addItemToCart({ productId: product.id, quantity: 1 }));
   };
 
   const handleToggleWishlist = () => {
     dispatch(toggleWishlist(product));
+  };
+
+  const handleImageError = (e) => {
+    e.target.src = '/placeholder-product.jpg'; // Fallback image
+    e.target.onerror = null; // Prevent infinite loop
   };
 
   return (
@@ -83,6 +94,15 @@ const ProductCard = ({ product }) => {
       </CardContent>
     </StyledCard>
   );
+};
+
+ProductCard.propTypes = {
+  product: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
+    price: PropTypes.number.isRequired,
+    imageUrl: PropTypes.string.isRequired,
+  }).isRequired,
 };
 
 export default ProductCard;

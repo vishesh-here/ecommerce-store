@@ -1,23 +1,18 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+import api from '../../services/api';
 
 export const fetchWishlist = createAsyncThunk(
   'wishlist/fetchWishlist',
   async (userId) => {
-    const response = await axios.get(`${API_URL}/wishlist/${userId}`);
+    const response = await api.getWishlist();
     return response.data;
   }
 );
 
 export const toggleWishlistItem = createAsyncThunk(
   'wishlist/toggleItem',
-  async ({ userId, productId }) => {
-    const response = await axios.post(`${API_URL}/wishlist/toggle`, {
-      userId,
-      productId,
-    });
+  async ({ productId }) => {
+    const response = await api.toggleWishlistItem(productId);
     return response.data;
   }
 );

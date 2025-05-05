@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { addItemToCart } from '../store/slices/cartSlice';
+import { toggleWishlist } from '../store/slices/wishlistSlice';
+import { useDispatch } from 'react-redux';
+import { addItemToCart } from '../store/slices/cartSlice';
 import {
   Container,
   Grid,
@@ -46,45 +51,51 @@ const ProductDetail = () => {
 
   useEffect(() => {
     const fetchProduct = async () => {
-      setLoading(true);
-      // Implement API call here
-      // For now, using setTimeout to simulate API call
-      setTimeout(() => {
-        setProduct({
-          id: 1,
-          name: 'Premium Leather Watch',
-          price: 299.99,
-          description: 'Luxurious leather watch with premium features...',
-          images: [
-            '/images/products/watch-1.jpg',
-            '/images/products/watch-2.jpg',
-            '/images/products/watch-3.jpg',
-          ],
-          rating: 4.5,
-          reviews: [
-            {
-              id: 1,
-              user: 'John Doe',
-              rating: 5,
-              comment: 'Excellent quality and design!',
-              date: '2023-05-15',
+      try {
+        setLoading(true);
+        // Implement API call here
+        // For now, using setTimeout to simulate API call
+        setTimeout(() => {
+          setProduct({
+            id: 1,
+            name: 'Premium Leather Watch',
+            price: 299.99,
+            description: 'Luxurious leather watch with premium features...',
+            images: [
+              '/images/products/watch-1.jpg',
+              '/images/products/watch-2.jpg',
+              '/images/products/watch-3.jpg',
+            ],
+            rating: 4.5,
+            reviews: [
+              {
+                id: 1,
+                user: 'John Doe',
+                rating: 5,
+                comment: 'Excellent quality and design!',
+                date: '2023-05-15',
+              },
+              // Add more reviews...
+            ],
+            specifications: {
+              Brand: 'Luxury Brand',
+              Material: 'Genuine Leather',
+              Movement: 'Swiss Automatic',
+              'Water Resistance': '50m',
             },
-            // Add more reviews...
-          ],
-          specifications: {
-            Brand: 'Luxury Brand',
-            Material: 'Genuine Leather',
-            Movement: 'Swiss Automatic',
-            'Water Resistance': '50m',
-          },
-          stock: 10,
-          category: 'Watches',
-        });
+            stock: 10,
+            category: 'Watches',
+          });
+          setLoading(false);
+        }, 1000);
+      } catch (error) {
         setLoading(false);
-      }, 1000);
+        // Handle error
+      }
     };
 
     fetchProduct();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const handleQuantityChange = (delta) => {
@@ -94,8 +105,10 @@ const ProductDetail = () => {
     }
   };
 
+  const dispatch = useDispatch();
+
   const handleAddToCart = () => {
-    // Implement add to cart functionality
+    dispatch(addItemToCart({ productId: product.id, quantity }));
     setSnackbar({
       open: true,
       message: 'Product added to cart successfully!',

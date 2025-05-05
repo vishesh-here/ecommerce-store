@@ -1,9 +1,11 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';import { useDispatch } from 'react-redux';
+import CssBaseline from '@mui/material/CssBaseline';
+import { useDispatch } from 'react-redux';
 
-// Themeimport theme from './theme';
+// Theme
+import theme from './theme';
 
 // Components
 import Header from './components/Header/Header';

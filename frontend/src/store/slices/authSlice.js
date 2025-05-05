@@ -40,7 +40,11 @@ const authSlice = createSlice({
     error: null,
   },
   reducers: {
+
+
     logout: (state) => {
+
+
       state.token = null;
       state.isAuthenticated = false;
       state.user = null;

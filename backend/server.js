@@ -15,7 +15,10 @@ const productRoutes = require('./routes/productRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const addressRoutes = require('./routes/addressRoutes');
 const wishlistRoutes = require('./routes/wishlistRoutes');
-
+// Test route
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'Backend is running!' });
+});
 // Route Middleware
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);

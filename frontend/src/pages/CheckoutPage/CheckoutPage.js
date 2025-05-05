@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Paper,
@@ -15,6 +15,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -29,41 +31,86 @@ const CheckoutPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   
-  const { address, cartTotal, shippingCost, finalTotal } = location.state || {};
-  const cartItems = useSelector((state) => state.cart.items);
-  
   const [activeStep, setActiveStep] = useState(0);
   const [transactionId, setTransactionId] = useState('');
+  const [transactionIdError, setTransactionIdError] = useState('');
   const [orderComplete, setOrderComplete] = useState(false);
   const [orderId, setOrderId] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Redirect if no checkout data
-  if (!address || !cartItems.length) {
-    navigate('/cart');
-    return null;
-  }
+  const cartItems = useSelector((state) => state.cart.items);
+  const checkoutData = location.state;
+  const { address, cartTotal, shippingCost, finalTotal } = checkoutData || {};
+
+  useEffect(() => {
+    if (!checkoutData || !address || !cartItems.length) {
+      navigate('/cart', { replace: true });
+    }
+  }, [checkoutData, address, cartItems, navigate]);
+
+  const formatPrice = (price) => {
+    if (typeof price !== 'number' || isNaN(price)) {
+      return '0.00';
+    }
+    return price.toFixed(2);
+  };
+
+  const handleImageError = (e) => {
+    e.target.src = '/placeholder-product.jpg';
+    e.target.onerror = null;
+  };
+
+  const validateTransactionId = () => {
+    if (!transactionId.trim()) {
+      setTransactionIdError('Transaction ID is required');
+      return false;
+    }
+    if (transactionId.length < 6) {
+      setTransactionIdError('Transaction ID must be at least 6 characters');
+      return false;
+    }
+    setTransactionIdError('');
+    return true;
+  };
 
   const handleNext = async () => {
     if (activeStep === 1) {
-      // Process payment and create order
+      if (!validateTransactionId()) {
+        return;
+      }
+
       try {
+        setLoading(true);
+        setError(null);
+
         const orderData = {
-          items: cartItems,
+          items: cartItems.map(item => ({
+            id: item.id,
+            quantity: item.quantity,
+            price: item.price,
+            name: item.name
+          })),
           shippingAddress: address,
-          total: finalTotal,
-          transactionId,
+          total: Number(finalTotal.toFixed(2)),
+          transactionId: transactionId.trim(),
+          orderDate: new Date().toISOString()
         };
         
         const response = await dispatch(createOrder(orderData)).unwrap();
         setOrderId(response.orderId);
         dispatch(clearCart());
         setOrderComplete(true);
-      } catch (error) {
-        console.error('Order creation failed:', error);
-        return;
+        setActiveStep((prevStep) => prevStep + 1);
+      } catch (err) {
+        setError(err.message || 'Failed to create order. Please try again.');
+        console.error('Order creation failed:', err);
+      } finally {
+        setLoading(false);
       }
+    } else {
+      setActiveStep((prevStep) => prevStep + 1);
     }
-    setActiveStep((prevStep) => prevStep + 1);
   };
 
   const handleBack = () => {
@@ -88,17 +135,15 @@ const CheckoutPage = () => {
                 <Typography variant="h6" gutterBottom>
                   Shipping Address
                 </Typography>
-                <Typography>
-                  {address.line1}
-                  <br />
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="body1">{address.line1}</Typography>
                   {address.line2 && (
-                    <>
-                      {address.line2}
-                      <br />
-                    </>
+                    <Typography variant="body1">{address.line2}</Typography>
                   )}
-                  {`${address.city}, ${address.state} ${address.pinCode}`}
-                </Typography>
+                  <Typography variant="body1">
+                    {address.city}, {address.state} {address.pinCode}
+                  </Typography>
+                </Box>
               </Paper>
 
               <Paper sx={{ p: 3 }}>
@@ -109,62 +154,74 @@ const CheckoutPage = () => {
                   <Box key={item.id} sx={{ mb: 2 }}>
                     <Grid container spacing={2} alignItems="center">
                       <Grid item xs={2}>
-                        <img
+                        <Box
+                          component="img"
                           src={item.imageUrl}
                           alt={item.name}
-                          style={{ width: '100%', borderRadius: 8 }}
+                          onError={handleImageError}
+                          sx={{
+                            width: '100%',
+                            height: 'auto',
+                            borderRadius: 1,
+                            display: 'block'
+                          }}
                         />
                       </Grid>
                       <Grid item xs={6}>
-                        <Typography>{item.name}</Typography>
+                        <Typography variant="subtitle1">{item.name}</Typography>
                         <Typography variant="body2" color="text.secondary">
                           Quantity: {item.quantity}
                         </Typography>
-                      </Grid>
-                      <Grid item xs={4} sx={{ textAlign: 'right' }}>
-                        <Typography>
-                          ${(item.price * item.quantity).toFixed(2)}
+                        <Typography variant="body2" color="text.secondary">
+                          Price: ${formatPrice(item.price)} each
                         </Typography>
                       </Grid>
-                    </Box>
-                    <Divider sx={{ my: 2 }} />
+                      <Grid item xs={4}>
+                        <Typography variant="subtitle1" align="right">
+                          ${formatPrice(item.price * item.quantity)}
+                        </Typography>
+                      </Grid>
+                    </Grid>
+                    {cartItems.indexOf(item) !== cartItems.length - 1 && (
+                      <Divider sx={{ my: 2 }} />
+                    )}
                   </Box>
                 ))}
               </Paper>
             </Grid>
 
             <Grid item xs={12} md={4}>
-              <Paper sx={{ p: 3 }}>
+              <Paper sx={{ p: 3, position: 'sticky', top: 24 }}>
                 <Typography variant="h6" gutterBottom>
                   Order Summary
                 </Typography>
-                <Box sx={{ my: 2 }}>
-                  <Grid container justifyContent="space-between" sx={{ mb: 1 }}>
-                    <Grid item>
-                      <Typography>Subtotal</Typography>
+                <Box sx={{ mt: 3 }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={6}>
+                      <Typography variant="body1">Subtotal</Typography>
                     </Grid>
-                    <Grid item>
-                      <Typography>${cartTotal.toFixed(2)}</Typography>
+                    <Grid item xs={6}>
+                      <Typography variant="body1" align="right">
+                        ${formatPrice(cartTotal)}
+                      </Typography>
                     </Grid>
-                  </Grid>
-                  <Grid container justifyContent="space-between" sx={{ mb: 1 }}>
-                    <Grid item>
-                      <Typography>Shipping</Typography>
+                    <Grid item xs={6}>
+                      <Typography variant="body1">Shipping</Typography>
                     </Grid>
-                    <Grid item>
-                      <Typography>
-                        {shippingCost === 0 ? 'Free' : `$${shippingCost.toFixed(2)}`}
+                    <Grid item xs={6}>
+                      <Typography variant="body1" align="right">
+                        {shippingCost === 0 ? 'Free' : `$${formatPrice(shippingCost)}`}
                       </Typography>
                     </Grid>
                   </Grid>
-                  <Divider sx={{ my: 1 }} />
-                  <Grid container justifyContent="space-between">
-                    <Grid item>
+                  <Divider sx={{ my: 2 }} />
+                  <Grid container spacing={2}>
+                    <Grid item xs={6}>
                       <Typography variant="h6">Total</Typography>
                     </Grid>
-                    <Grid item>
-                      <Typography variant="h6">
-                        ${finalTotal.toFixed(2)}
+                    <Grid item xs={6}>
+                      <Typography variant="h6" color="primary" align="right">
+                        ${formatPrice(finalTotal)}
                       </Typography>
                     </Grid>
                   </Grid>
@@ -180,18 +237,49 @@ const CheckoutPage = () => {
             <Typography variant="h6" gutterBottom>
               Payment Details
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Please complete the payment using your preferred method and enter the
-              transaction ID below.
-            </Typography>
+            
+            {error && (
+              <Alert severity="error" sx={{ mb: 3 }}>
+                {error}
+              </Alert>
+            )}
+
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="h6" color="primary" gutterBottom>
+                Total Amount: ${formatPrice(finalTotal)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Please complete the payment using your preferred payment method and enter
+                the transaction ID below.
+              </Typography>
+            </Box>
+
             <TextField
               fullWidth
               label="Transaction ID"
               value={transactionId}
-              onChange={(e) => setTransactionId(e.target.value)}
+              onChange={(e) => {
+                setTransactionId(e.target.value);
+                setTransactionIdError('');
+              }}
+              onBlur={validateTransactionId}
+              error={!!transactionIdError}
+              helperText={transactionIdError}
+              disabled={loading}
               required
               sx={{ mb: 2 }}
+              inputProps={{
+                'aria-label': 'Transaction ID',
+                'aria-required': 'true',
+                'aria-invalid': !!transactionIdError,
+              }}
             />
+
+            {loading && (
+              <Box display="flex" justifyContent="center" sx={{ mt: 2 }}>
+                <CircularProgress size={24} />
+              </Box>
+            )}
           </Paper>
         );
 
@@ -201,23 +289,26 @@ const CheckoutPage = () => {
             <CheckCircleIcon
               color="success"
               sx={{ fontSize: 64, mb: 2 }}
+              aria-label="Order Success"
             />
             <Typography variant="h5" gutterBottom>
               Thank you for your order!
             </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+            <Typography variant="body1" color="text.secondary" gutterBottom>
               Your order has been placed successfully.
-              {orderId && (
-                <>
-                  <br />
-                  Order ID: {orderId}
-                </>
-              )}
+            </Typography>
+            {orderId && (
+              <Typography variant="body1" sx={{ mb: 3 }}>
+                Order ID: <strong>{orderId}</strong>
+              </Typography>
+            )}
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              You will receive an email confirmation shortly.
             </Typography>
             <Button
               variant="contained"
               onClick={handleFinish}
-              sx={{ mt: 2 }}
+              aria-label="Continue Shopping"
             >
               Continue Shopping
             </Button>
@@ -228,6 +319,10 @@ const CheckoutPage = () => {
         return null;
     }
   };
+
+  if (!checkoutData) {
+    return null;
+  }
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -243,34 +338,60 @@ const CheckoutPage = () => {
 
       {activeStep !== steps.length - 1 && (
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4 }}>
-          <Button onClick={handleBack} sx={{ mr: 1 }}>
+          <Button
+            onClick={handleBack}
+            sx={{ mr: 1 }}
+            disabled={loading}
+            aria-label={activeStep === 0 ? 'Back to Cart' : 'Back'}
+          >
             {activeStep === 0 ? 'Back to Cart' : 'Back'}
           </Button>
           <Button
             variant="contained"
             onClick={handleNext}
-            disabled={activeStep === 1 && !transactionId}
+            disabled={loading || (activeStep === 1 && !transactionId.trim())}
+            aria-label={activeStep === steps.length - 2 ? 'Place Order' : 'Next'}
           >
-            {activeStep === steps.length - 2 ? 'Place Order' : 'Next'}
+            {loading ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              activeStep === steps.length - 2 ? 'Place Order' : 'Next'
+            )}
           </Button>
         </Box>
       )}
 
-      <Dialog open={orderComplete} onClose={handleFinish}>
-        <DialogTitle>Order Confirmation</DialogTitle>
+      <Dialog 
+        open={orderComplete} 
+        onClose={handleFinish}
+        aria-labelledby="order-confirmation-dialog"
+      >
+        <DialogTitle id="order-confirmation-dialog">
+          Order Confirmation
+        </DialogTitle>
         <DialogContent>
-          <Typography>
-            Your order has been placed successfully!
+          <Box sx={{ textAlign: 'center', py: 2 }}>
+            <CheckCircleIcon
+              color="success"
+              sx={{ fontSize: 48, mb: 2 }}
+              aria-label="Order Success"
+            />
+            <Typography gutterBottom>
+              Your order has been placed successfully!
+            </Typography>
             {orderId && (
-              <>
-                <br />
-                Order ID: {orderId}
-              </>
+              <Typography variant="body2" color="text.secondary">
+                Order ID: <strong>{orderId}</strong>
+              </Typography>
             )}
-          </Typography>
+          </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleFinish} variant="contained">
+          <Button 
+            onClick={handleFinish} 
+            variant="contained"
+            aria-label="Continue Shopping"
+          >
             Continue Shopping
           </Button>
         </DialogActions>

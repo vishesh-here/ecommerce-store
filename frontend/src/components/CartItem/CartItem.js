@@ -12,7 +12,7 @@ import {
 import { styled } from '@mui/material/styles';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { useDispatch } from 'react-redux';
-import { removeFromCart, updateQuantity } from '../../store/slices/cartSlice';
+import { removeCartItem, updateCartItemQuantity } from '../../store/slices/cartSlice';
 
 const ProductImage = styled('img')({
   width: '100%',
@@ -28,11 +28,11 @@ const CartItem = ({ item }) => {
 
   const handleQuantityChange = (event) => {
     const newQuantity = event.target.value;
-    dispatch(updateQuantity({ id: item.id, quantity: newQuantity }));
+    dispatch(updateCartItemQuantity({ productId: item.id, quantity: newQuantity }));
   };
 
   const handleRemove = () => {
-    dispatch(removeFromCart(item.id));
+    dispatch(removeCartItem(item.id));
   };
 
   return (
